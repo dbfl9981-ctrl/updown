@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Up Down Game - 최고의 숫자 맞히기 게임</title>
+    <meta name="description" content="흥미진진한 Up Down 숫자 맞히기 게임! 싱글 플레이 및 멀티 플레이 모드를 지원하며, 세련된 디자인과 직관적인 범위 시각화를 제공합니다.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-background">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <main class="app-container">
+        <!-- SETUP SCREEN -->
+        <section id="setup-screen" class="screen active">
+            <header class="app-header">
+                <div class="logo-area">
+                    <span class="logo-icon">🎯</span>
+                    <h1>UP & DOWN</h1>
+                </div>
+                <p class="subtitle">정답 숫자를 찾아 범위를 좁혀보세요!</p>
+            </header>
+
+            <div class="card setup-card">
+                <form id="setup-form" onsubmit="event.preventDefault();">
+                    <!-- Range Setting Group -->
+                    <div class="form-group">
+                        <label class="group-label">🔢 숫자 범위 설정</label>
+                        <div class="range-inputs">
+                            <div class="input-wrapper">
+                                <span class="input-prefix">MIN</span>
+                                <input type="number" id="min-range" value="1" min="1" max="99999" required>
+                            </div>
+                            <div class="range-divider">to</div>
+                            <div class="input-wrapper">
+                                <span class="input-prefix">MAX</span>
+                                <input type="number" id="max-range" value="100" min="2" max="999999" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mode Setting Group -->
+                    <div class="form-group">
+                        <label class="group-label">🎮 게임 모드 선택</label>
+                        <div class="mode-selectors">
+                            <button type="button" id="btn-mode-single" class="mode-btn active" data-mode="single">
+                                <span class="mode-icon">👤</span>
+                                <div class="mode-info">
+                                    <span class="mode-title">싱글 플레이</span>
+                                    <span class="mode-desc">혼자서 정답을 맞힙니다</span>
+                                </div>
+                            </button>
+                            <button type="button" id="btn-mode-multi" class="mode-btn" data-mode="multi">
+                                <span class="mode-icon">👥</span>
+                                <div class="mode-info">
+                                    <span class="mode-title">멀티 플레이</span>
+                                    <span class="mode-desc">여러 명이 순서대로 맞힙니다</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Multiplayer Input Group (Hidden by default) -->
+                    <div id="multiplayer-settings" class="form-group hidden">
+                        <label class="group-label">👥 참가자 설정</label>
+                        <div id="player-list-container" class="player-list">
+                            <!-- Dynamic inputs added here by JS -->
+                        </div>
+                        <button type="button" id="btn-add-player" class="btn btn-secondary btn-sm">
+                            <span>➕ 플레이어 추가</span>
+                        </button>
+                    </div>
+
+                    <!-- Limit Setting Group -->
+                    <div class="form-group">
+                        <div class="toggle-container">
+                            <label class="group-label" for="toggle-limit">⏳ 시도 횟수 제한</label>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-limit" checked>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div id="limit-input-wrapper" class="input-wrapper limit-input-wrapper">
+                            <span class="input-prefix">최대 횟수</span>
+                            <input type="number" id="max-attempts" value="10" min="1" max="100">
+                        </div>
+                    </div>
+
+                    <!-- Start Button -->
+                    <button type="submit" id="btn-start-game" class="btn btn-primary btn-block">
+                        <span>게임 시작하기 🚀</span>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- GAMEPLAY SCREEN -->
+        <section id="game-screen" class="screen">
+            <header class="game-header">
+                <button type="button" id="btn-give-up" class="btn btn-icon-only" title="포기하고 처음으로">
+                    <span>🏠</span>
+                </button>
+                <div class="status-badge" id="turn-badge">
+                    <span class="badge-icon">👤</span>
+                    <span id="current-player-name">Player</span>의 차례
+                </div>
+                <div class="status-badge" id="attempts-badge">
+                    <span class="badge-icon">⏳</span>
+                    남은 횟수: <span id="attempts-left">10</span>/<span id="total-attempts">10</span>
+                </div>
+            </header>
+
+            <!-- Dynamic Range Visualizer -->
+            <div class="card visualizer-card">
+                <div class="range-status">
+                    <div class="range-edge" id="current-min-display">1</div>
+                    <div class="range-center-line">
+                        <div class="range-gauge-track">
+                            <div class="range-gauge-fill" id="range-fill"></div>
+                            <div class="gauge-marker min" id="gauge-marker-min"></div>
+                            <div class="gauge-marker max" id="gauge-marker-max"></div>
+                        </div>
+                        <div class="range-helper-text">정답은 이 범위 사이에 있습니다!</div>
+                    </div>
+                    <div class="range-edge" id="current-max-display">100</div>
+                </div>
+            </div>
+
+            <!-- Feedback Display (UP/DOWN/CORRECT) -->
+            <div id="feedback-display" class="feedback-container idle">
+                <div class="feedback-arrow" id="feedback-arrow">❓</div>
+                <h2 class="feedback-text" id="feedback-text">첫 번째 추측을 입력하세요</h2>
+            </div>
+
+            <!-- Guess Input Form -->
+            <div class="card play-card">
+                <form id="guess-form" onsubmit="event.preventDefault();">
+                    <div class="guess-input-group">
+                        <input type="number" id="guess-input" placeholder="숫자를 입력하세요" required autocomplete="off">
+                        <button type="submit" id="btn-submit-guess" class="btn btn-primary">
+                            <span>입력</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Custom numeric keypad helpers for better mobile UX -->
+                <div class="keypad-helpers">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-helper-min">최소값</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-helper-mid">중간값</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-helper-max">최대값</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-helper-clear">지우기</button>
+                </div>
+            </div>
+
+            <!-- History Section -->
+            <div class="history-section">
+                <h3>📜 진행 기록 (<span id="history-count">0</span>)</h3>
+                <div class="history-list" id="history-list">
+                    <!-- Dynamic history entries here -->
+                    <div class="history-placeholder">아직 기록이 없습니다. 먼저 맞춰보세요!</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- GAME OVER SCREEN -->
+        <section id="game-over-screen" class="screen">
+            <div class="card game-over-card">
+                <div class="celebration-icon" id="game-over-icon">🎉</div>
+                <h1 id="game-over-title">축하합니다!</h1>
+                <p class="game-over-subtitle" id="game-over-subtitle">정답을 맞히셨습니다.</p>
+
+                <!-- Target Reveal Panel -->
+                <div class="target-reveal">
+                    <span class="label">정답 숫자</span>
+                    <span class="target-number" id="reveal-target-number">42</span>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="stat-label" id="stat-winner-label">우승자</span>
+                        <span class="stat-value" id="stat-winner">Player 1</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-label">총 시도 횟수</span>
+                        <span class="stat-value" id="stat-attempts">5회</span>
+                    </div>
+                </div>
+
+                <!-- History Summary -->
+                <div class="summary-history-container">
+                    <h3>최종 진행 기록</h3>
+                    <div class="history-list compact" id="summary-history-list">
+                        <!-- Cloned history items for review -->
+                    </div>
+                </div>
+
+                <div class="game-over-actions">
+                    <button type="button" id="btn-restart-same" class="btn btn-primary">
+                        <span>다시 하기 🔁</span>
+                    </button>
+                    <button type="button" id="btn-go-setup" class="btn btn-secondary">
+                        <span>설정 변경하기 ⚙️</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Game JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
